@@ -1,3 +1,4 @@
+pub mod role_adapter;
 pub mod tariff_adapter;
 
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -12,7 +13,7 @@ pub fn pg_connect(url: &String) -> Result<Arc<PgPool>, Box<dyn Error>> {
     match PgPoolOptions::new().max_connections(10).connect_lazy(&url) {
         Ok(v) => Ok(Arc::new(v)),
         Err(e) => {
-            tracing::error!("Database error: {}", e.to_string());
+            tracing::error!("Database error: {e}");
             Err(e.to_string().into())
         }
     }

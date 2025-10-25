@@ -12,7 +12,7 @@ pub struct TariffContainer {
 
 impl TariffContainer {
     pub fn new(postres: Arc<PgPool>) -> Self {
-        let repo = Arc::new(TariffRepository::new(postres.clone()));
+        let repo = Arc::new(TariffRepository::new(postres));
         let logic = TariffLogic::new(repo.clone());
 
         TariffContainer { repo, logic }

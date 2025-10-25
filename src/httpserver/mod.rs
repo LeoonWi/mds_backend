@@ -1,3 +1,4 @@
+pub mod role_handler;
 mod tariff_handler;
 
 use std::sync::Arc;
@@ -10,9 +11,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tower_http::trace::TraceLayer;
 
+use crate::di::role_container::RoleContainer;
+use crate::di::tariff_container::TariffContainer;
+use crate::httpserver::role_handler::role_router;
 use crate::httpserver::tariff_handler::tariff_router;
+use crate::logger;
 use crate::models::error::AppError;
-use crate::{di::tariff_container::TariffContainer, logger};
 
 #[derive(Serialize, Deserialize)]
 struct ErrorResponse {
@@ -48,11 +52,12 @@ impl IntoResponse for AppError {
 pub struct Server {
     port: i16,
     tariff: Arc<TariffContainer>,
+    role: Arc<RoleContainer>,
 }
 
 impl Server {
-    pub fn new(port: i16, tariff: Arc<TariffContainer>) -> Self {
-        Server { port, tariff }
+    pub fn new(port: i16, tariff: Arc<TariffContainer>, role: Arc<RoleContainer>) -> Self {
+        Server { port, tariff, role }
     }
 
     pub async fn run(self) {
@@ -61,6 +66,7 @@ impl Server {
 
         // init routers application
         let tariff_router = tariff_router(self.tariff.clone());
+        let role_router = role_router(self.role.clone());
 
         // init root router
         let app = Router::new()
@@ -78,7 +84,8 @@ impl Server {
                     })
                     .on_failure(()),
             )
-            .merge(tariff_router);
+            .merge(tariff_router)
+            .merge(role_router);
 
         // init server
         let addr = format!("0.0.0.0:{}", self.port);
