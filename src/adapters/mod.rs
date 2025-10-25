@@ -1,7 +1,9 @@
+pub mod tariff_adapter;
+
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::{error::Error, sync::Arc};
 
-pub fn connect(url: &String) -> Result<Arc<PgPool>, Box<dyn Error>> {
+pub fn pg_connect(url: &String) -> Result<Arc<PgPool>, Box<dyn Error>> {
     // TODO Установить значение в 20 перед релизом (начальная точка 20-100)
     // Рассчитывать 2-4 * кол-во ядер CPU
     // Брать во внимание 1-2 подключения для клиента/воркера

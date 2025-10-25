@@ -47,7 +47,7 @@ pub struct Config {
     ///
     /// ## Пример
     /// `SERVER_PORT=3000`
-    pub port: String,
+    pub port: i16,
 }
 
 impl Config {
@@ -73,7 +73,10 @@ impl Config {
         }
 
         let ip = env::var("SERVER_HOST")?;
-        let port = env::var("SERVER_PORT")?;
+        let port = env::var("SERVER_PORT").map(|s| {
+            s.parse::<i16>()
+                .expect("Failed to parse string port to i16")
+        })?;
         let profile = match env::var("PROFILE") {
             Ok(v) => v,
             Err(_) => "".to_string(),

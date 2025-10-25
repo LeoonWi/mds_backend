@@ -1,11 +1,20 @@
-use std::process;
+mod adapters;
+mod application;
+mod config;
+mod di;
+mod httpserver;
+mod logger;
+mod models;
 
-use mds_backend::server_run;
+use std::{error::Error, sync::Arc};
 
 #[tokio::main]
-async fn main() {
-    if let Err(e) = server_run().await {
-        eprintln!("Application error: {e}");
-        process::exit(1);
-    }
+async fn main() -> Result<(), Box<dyn Error>> {
+    let config = config::Config::build()?;
+    let postgres = adapters::pg_connect(&config.db_url)?;
+    let tariff_container = Arc::new(di::tariff_container::TariffContainer::new(postgres.clone()));
+    let server = httpserver::Server::new(config.port, tariff_container.clone());
+    server.run().await;
+
+    Ok(())
 }
