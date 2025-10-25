@@ -13,8 +13,8 @@ use crate::{
 
 pub fn tariff_router(container: Arc<TariffContainer>) -> Router {
     Router::new()
-        .route("/", get(get_tariffs))
-        .route("/{name}", get(get_tariff_by_name))
+        .route("/tariffs", get(get_tariffs))
+        .route("/tariffs/{name}", get(get_tariff_by_name))
         .with_state(container)
 }
 

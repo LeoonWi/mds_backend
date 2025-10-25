@@ -11,8 +11,8 @@ use crate::{di::role_container::RoleContainer, models::role::Role};
 
 pub fn role_router(container: Arc<RoleContainer>) -> Router {
     Router::new()
-        .route("/", get(get_roles))
-        .route("/{name}", get(get_role_by_name))
+        .route("/roles", get(get_roles))
+        .route("/roles/{name}", get(get_role_by_name))
         .with_state(container)
 }
 
