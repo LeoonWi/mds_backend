@@ -3,9 +3,12 @@ use std::sync::Arc;
 use crate::models::{error::AppError, tariff::Tariff};
 
 pub trait TariffAdapter {
-    async fn save(&self, name: String) -> Result<(), AppError>;
-    async fn get(&self) -> Result<Vec<Tariff>, AppError>;
-    async fn get_by_name(&self, name: String) -> Result<Tariff, AppError>;
+    fn save(&self, name: String) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
+    fn get(&self) -> impl std::future::Future<Output = Result<Vec<Tariff>, AppError>> + Send;
+    fn get_by_name(
+        &self,
+        name: String,
+    ) -> impl std::future::Future<Output = Result<Tariff, AppError>> + Send;
 }
 
 pub struct TariffLogic<R>

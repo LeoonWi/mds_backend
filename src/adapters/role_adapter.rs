@@ -19,7 +19,7 @@ impl RoleRepository {
 
 impl RoleAdapter for RoleRepository {
     async fn save(&self, name: String) -> Result<(), AppError> {
-        let _ = query("INSERT INTO role (name) VALUE ($1)")
+        let _ = query("INSERT INTO role (name) VALUES ($1)")
             .bind(&name)
             .execute(&*self.pool)
             .await

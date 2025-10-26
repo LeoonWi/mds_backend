@@ -1,4 +1,5 @@
-pub mod role_handler;
+mod employee_handler;
+mod role_handler;
 mod tariff_handler;
 
 use std::sync::Arc;
@@ -11,8 +12,11 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tower_http::trace::TraceLayer;
 
+use crate::di::default_value_container::DefaultValueContainer;
+use crate::di::employee_container::EmployeeContainer;
 use crate::di::role_container::RoleContainer;
 use crate::di::tariff_container::TariffContainer;
+use crate::httpserver::employee_handler::employee_router;
 use crate::httpserver::role_handler::role_router;
 use crate::httpserver::tariff_handler::tariff_router;
 use crate::logger;
@@ -39,10 +43,9 @@ impl IntoResponse for AppError {
             Self::Conflict => (StatusCode::CONFLICT, ErrorResponse::new(None)),
             Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, ErrorResponse::new(Some(msg))),
             Self::NotFound => (StatusCode::NOT_FOUND, ErrorResponse::new(None)),
-            Self::InternalServerError(msg) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                ErrorResponse::new(Some(msg)),
-            ),
+            Self::InternalServerError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, ErrorResponse::new(None))
+            }
         };
 
         (status, Json(error)).into_response()
@@ -50,14 +53,31 @@ impl IntoResponse for AppError {
 }
 
 pub struct Server {
+    ip: String,
     port: i16,
     tariff: Arc<TariffContainer>,
     role: Arc<RoleContainer>,
+    default_value: Arc<DefaultValueContainer>,
+    employee: Arc<EmployeeContainer>,
 }
 
 impl Server {
-    pub fn new(port: i16, tariff: Arc<TariffContainer>, role: Arc<RoleContainer>) -> Self {
-        Server { port, tariff, role }
+    pub fn new(
+        ip: String,
+        port: i16,
+        tariff: Arc<TariffContainer>,
+        role: Arc<RoleContainer>,
+        default_value: Arc<DefaultValueContainer>,
+        employee: Arc<EmployeeContainer>,
+    ) -> Self {
+        Server {
+            ip,
+            port,
+            tariff,
+            role,
+            default_value,
+            employee,
+        }
     }
 
     pub async fn run(self) {
@@ -65,8 +85,9 @@ impl Server {
         logger::init_dev_logger();
 
         // init routers application
-        let tariff_router = tariff_router(self.tariff.clone());
-        let role_router = role_router(self.role.clone());
+        let tariff_router = tariff_router(self.tariff);
+        let role_router = role_router(self.role);
+        let employee_router = employee_router(self.employee);
 
         // init root router
         let app = Router::new()
@@ -85,10 +106,11 @@ impl Server {
                     .on_failure(()),
             )
             .merge(tariff_router)
-            .merge(role_router);
+            .merge(role_router)
+            .merge(employee_router);
 
         // init server
-        let addr = format!("0.0.0.0:{}", self.port);
+        let addr = format!("{}:{}", self.ip, self.port);
         let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
 
         println!("Server running on {}", &addr);

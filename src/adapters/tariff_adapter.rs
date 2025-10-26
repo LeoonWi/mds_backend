@@ -20,7 +20,7 @@ impl TariffRepository {
 
 impl TariffAdapter for TariffRepository {
     async fn save(&self, name: String) -> Result<(), AppError> {
-        query("INSERT INTO tariff (name) VALUE ($1)")
+        query("INSERT INTO tariff (name) VALUES ($1)")
             .bind(&name)
             .execute(&*self.pool)
             .await

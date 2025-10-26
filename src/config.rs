@@ -66,10 +66,7 @@ impl Config {
                 Err(_) => "".to_string(),
             };
 
-            database_url = format!(
-                "postgres://{}:{}@{}:{}/{}{}",
-                user, password, host, port, db, args
-            );
+            database_url = format!("postgres://{user}:{password}@{host}:{port}/{db}{args}",);
         }
 
         let ip = env::var("SERVER_HOST")?;

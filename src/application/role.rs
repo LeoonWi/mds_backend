@@ -3,9 +3,12 @@ use std::sync::Arc;
 use crate::models::{error::AppError, role::Role};
 
 pub trait RoleAdapter {
-    async fn save(&self, name: String) -> Result<(), AppError>;
-    async fn get(&self) -> Result<Vec<Role>, AppError>;
-    async fn get_by_name(&self, name: String) -> Result<Role, AppError>;
+    fn save(&self, name: String) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
+    fn get(&self) -> impl std::future::Future<Output = Result<Vec<Role>, AppError>> + Send;
+    fn get_by_name(
+        &self,
+        name: String,
+    ) -> impl std::future::Future<Output = Result<Role, AppError>> + Send;
 }
 
 pub struct RoleLogic<R>

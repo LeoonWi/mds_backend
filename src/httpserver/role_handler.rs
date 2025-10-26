@@ -24,5 +24,5 @@ async fn get_role_by_name(
     State(container): State<Arc<RoleContainer>>,
     Path(name): Path<String>,
 ) -> Result<Json<Role>, AppError> {
-    container.logic.get_role(name).await.map(|v| Json(v))
+    container.logic.get_role(name).await.map(Json)
 }

@@ -26,5 +26,5 @@ async fn get_tariff_by_name(
     State(container): State<Arc<TariffContainer>>,
     Path(name): Path<String>,
 ) -> Result<Json<Tariff>, AppError> {
-    container.logic.get_tariff(name).await.map(|v| Json(v))
+    container.logic.get_tariff(name).await.map(Json)
 }

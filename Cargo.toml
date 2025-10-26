@@ -7,6 +7,10 @@ edition = "2024"
 name = "main"
 path = "src/main.rs"
 
+[[bin]]
+name = "init"
+path = "src/init.rs"
+
 [dependencies]
 axum = "0.8.6"
 tokio = { version = "1.47.1", features = ["full"] }
@@ -25,3 +29,4 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 serde_json = "1.0"
 bcrypt = "0.17"
+regex = "1.12.2"
