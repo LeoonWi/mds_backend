@@ -3,14 +3,6 @@ name = "mds_backend"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "main"
-path = "src/main.rs"
-
-[[bin]]
-name = "init"
-path = "src/init.rs"
-
 [dependencies]
 axum = "0.8.6"
 tokio = { version = "1.47.1", features = ["full"] }
