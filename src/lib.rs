@@ -9,7 +9,7 @@ mod validate_email;
 
 use std::{error::Error, sync::Arc};
 
-use crate::di::{default_value_container, employee_container, role_container, tariff_container};
+use crate::di::{default_value_container, employee_container, role_container, tariff_container, user_container};
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
     let config = config::Config::build()?;
@@ -25,6 +25,12 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         default_value_container.repo.clone(),
     ));
 
+    let user_container = Arc::new(user_container::UserContainer::new(
+        postgres.clone(),
+        default_value_container.repo.clone(),
+    ));
+
+
     let server = httpserver::Server::new(
         config.ip,
         config.port,
@@ -32,6 +38,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         role_container,
         default_value_container,
         employee_container,
+        user_container,
     );
     server.run().await;
 

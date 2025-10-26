@@ -2,6 +2,7 @@ pub mod default_value_adapter;
 pub mod employee;
 pub mod role_adapter;
 pub mod tariff_adapter;
+pub mod user;
 
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::{error::Error, sync::Arc};
