@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bcrypt::{DEFAULT_COST, hash};
 
 use crate::application::default_value::DefaultValueAdapter;
-use crate::models::employee::{Employee, EmployeeFlat};
+use crate::models::employee::{CreateEmployee, Employee, EmployeeFlat, FilterEmployee};
 use crate::models::error::AppError;
 use crate::validate_email;
 
@@ -18,11 +18,17 @@ pub trait EmployeeAdapter {
         dismissed: bool,
         password: String,
     ) -> impl std::future::Future<Output = Result<(), AppError>> + Send;
-    fn get(&self) -> impl std::future::Future<Output = Result<Vec<EmployeeFlat>, AppError>> + Send;
+
+    fn get(
+        &self,
+        filter: FilterEmployee,
+    ) -> impl std::future::Future<Output = Result<Vec<EmployeeFlat>, AppError>> + Send;
+
     fn get_by_email(
         &self,
         email: String,
     ) -> impl std::future::Future<Output = Result<EmployeeFlat, AppError>> + Send;
+
     fn dismiss(
         &self,
         email: String,
@@ -50,41 +56,40 @@ where
         }
     }
 
-    pub async fn create_employee(
-        &self,
-        name: String,
-        last_name: String,
-        middle_name: Option<String>,
-        email: String,
-        password: String,
-    ) -> Result<(), AppError> {
-        if password.len() < 5 {
+    pub async fn create_employee(&self, payload: CreateEmployee) -> Result<(), AppError> {
+        if payload.password.len() < 6 {
             return Err(AppError::BadRequest(
                 "Password must be at least 6 characters".to_owned(),
             ));
         }
 
-        let hash_password = hash(password, DEFAULT_COST).map_err(|_| {
+        let hash_password = hash(payload.password, DEFAULT_COST).map_err(|_| {
             tracing::error!("Failed to hash password in application 'create_employee'");
             AppError::BadRequest("Failed to hash password".to_owned())
         })?;
 
-        let correct_email = validate_email::validate_email(email)?;
+        let correct_email = validate_email::validate_email(payload.email)?;
 
-        let role = self
-            .repo_default_value
-            .get_role()
-            .await
-            .map_err(|_| {
-                AppError::BadRequest("Need to set a basic role for creating an employee".to_owned())
-            })?
-            .name;
+        let role = match payload.role {
+            Some(role) => role,
+            None => {
+                self.repo_default_value
+                    .get_role()
+                    .await
+                    .map_err(|_| {
+                        AppError::BadRequest(
+                            "Need to set a basic role for creating an employee".to_owned(),
+                        )
+                    })?
+                    .name
+            }
+        };
 
         self.repo
             .save(
-                name,
-                last_name,
-                middle_name,
+                payload.name,
+                payload.last_name,
+                payload.middle_name,
                 correct_email,
                 role,
                 false,
@@ -93,8 +98,8 @@ where
             .await
     }
 
-    pub async fn get_employees(&self) -> Vec<Employee> {
-        match self.repo.get().await {
+    pub async fn get_employees(&self, filter: FilterEmployee) -> Vec<Employee> {
+        match self.repo.get(filter).await {
             Ok(vec) => vec.into_iter().map(Employee::from).collect(),
             Err(_) => Vec::<Employee>::new(),
         }

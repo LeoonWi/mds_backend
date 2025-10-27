@@ -11,7 +11,6 @@ pub struct Employee {
     pub last_name: String,
     pub middle_name: Option<String>,
     pub email: String,
-    pub password: String,
     pub role: Role,
     pub dismissed: bool,
     pub created_at: DateTime<Utc>,
@@ -44,7 +43,6 @@ impl From<EmployeeFlat> for Employee {
             last_name: value.last_name,
             middle_name: value.middle_name,
             email: value.email,
-            password: value.password,
             role: Role {
                 name: value.role_name,
                 created_at: value.role_created_at,
@@ -55,4 +53,24 @@ impl From<EmployeeFlat> for Employee {
             updated_at: value.updated_at,
         }
     }
+}
+
+#[derive(Deserialize)]
+pub struct CreateEmployee {
+    pub name: String,
+    pub last_name: String,
+    pub middle_name: Option<String>,
+    pub email: String,
+    pub password: String,
+    pub role: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct FilterEmployee {
+    pub name: Option<String>,
+    pub last_name: Option<String>,
+    pub middle_name: Option<String>,
+    pub email: Option<String>,
+    pub role: Option<String>,
+    pub dismissed: Option<bool>,
 }

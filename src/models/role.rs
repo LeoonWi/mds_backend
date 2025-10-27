@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
+use sqlx::FromRow;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Role {

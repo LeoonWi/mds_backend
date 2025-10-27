@@ -1,3 +1,4 @@
+mod client_handler;
 mod employee_handler;
 mod role_handler;
 mod tariff_handler;
@@ -12,10 +13,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tower_http::trace::TraceLayer;
 
+use crate::di::client_container::ClientContainer;
 use crate::di::default_value_container::DefaultValueContainer;
 use crate::di::employee_container::EmployeeContainer;
 use crate::di::role_container::RoleContainer;
 use crate::di::tariff_container::TariffContainer;
+use crate::httpserver::client_handler::client_router;
 use crate::httpserver::employee_handler::employee_router;
 use crate::httpserver::role_handler::role_router;
 use crate::httpserver::tariff_handler::tariff_router;
@@ -59,6 +62,7 @@ pub struct Server {
     role: Arc<RoleContainer>,
     default_value: Arc<DefaultValueContainer>,
     employee: Arc<EmployeeContainer>,
+    client: Arc<ClientContainer>,
 }
 
 impl Server {
@@ -69,6 +73,7 @@ impl Server {
         role: Arc<RoleContainer>,
         default_value: Arc<DefaultValueContainer>,
         employee: Arc<EmployeeContainer>,
+        client: Arc<ClientContainer>,
     ) -> Self {
         Server {
             ip,
@@ -77,6 +82,7 @@ impl Server {
             role,
             default_value,
             employee,
+            client,
         }
     }
 
@@ -88,9 +94,14 @@ impl Server {
         let tariff_router = tariff_router(self.tariff);
         let role_router = role_router(self.role);
         let employee_router = employee_router(self.employee);
+        let client_router = client_router(self.client);
 
         // init root router
         let app = Router::new()
+            .merge(tariff_router)
+            .merge(role_router)
+            .merge(employee_router)
+            .merge(client_router)
             .layer(
                 TraceLayer::new_for_http()
                     .make_span_with(|req: &Request| {
@@ -101,13 +112,10 @@ impl Server {
                             .get::<MatchedPath>()
                             .map(|matched_path| matched_path.as_str());
 
-                        tracing::debug_span!("request", %method, %uri, matched_path)
+                        tracing::debug_span!("request ", %method, %uri, matched_path)
                     })
                     .on_failure(()),
-            )
-            .merge(tariff_router)
-            .merge(role_router)
-            .merge(employee_router);
+            );
 
         // init server
         let addr = format!("{}:{}", self.ip, self.port);

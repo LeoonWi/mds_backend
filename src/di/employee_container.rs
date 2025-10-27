@@ -3,7 +3,7 @@ use std::sync::Arc;
 use sqlx::PgPool;
 
 use crate::adapters::default_value_adapter::DefaultValueRepository;
-use crate::adapters::employee::EmployeeRepository;
+use crate::adapters::employee_adapter::EmployeeRepository;
 use crate::application::employee::EmployeeLogic;
 
 pub struct EmployeeContainer {
