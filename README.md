@@ -9,7 +9,7 @@ UPD: Все значения в '{...}' брать из .env или compose.dev.
 Загрузка и запуск всех контейнеров.
 
 ```sh
-> docker compose -f compose.dev.yaml up -d
+docker compose -f compose.dev.yaml up -d
 ```
 
 #### Миграции
@@ -17,14 +17,14 @@ UPD: Все значения в '{...}' брать из .env или compose.dev.
 После старта базы данных необходимо выполнить миграции для создания всех актуальных таблиц.
 
 ```sh
-> sqlx migrate run --database-url=postgres://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}?{args}
+sqlx migrate run --database-url=postgres://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}?{args}
 
 ```
 
 Например:
 
 ```sh
-> sqlx migrate run --database-url=postgres://postgres:admin@localhost:5433/mds?sslmode=disable
+sqlx migrate run --database-url=postgres://postgres:admin@localhost:5433/mds?sslmode=disable
 
 ```
 
@@ -35,14 +35,47 @@ UPD: Все значения в '{...}' брать из .env или compose.dev.
 Для Windows:
 
 ```powershell
-> Get-Content init.sql | docker exec -i {db_container_name} psql -U {POSTGRES_USER} -d {POSTGRES_DB}
+Get-Content init.sql | docker exec -i {db_container_name} psql -U {POSTGRES_USER} -d {POSTGRES_DB}
 
 ```
 
 Для Linux:
 
 ```sh
-> docker exec -i {db_container_name} psql -U {POSTGRES_USER} -d {POSTGRES_DB} < init.sql
+docker exec -i {db_container_name} psql -U {POSTGRES_USER} -d {POSTGRES_DB} < init.sql
+```
+
+#### Сборка и запуск сервера
+
+##### Сборка
+
+```sh
+cargo build -r
+```
+
+##### Запуск
+
+Для Windows:
+Выполнять единожды! Создаёт уч. запись суперпользователя.
+
+```powershell
+./target/release/init.exe
+```
+
+Запуск сервера:
+
+```powershell
+./target/release/mds_backend.exe
+```
+
+Для Linux:
+
+```sh
+./target/release/init
+```
+
+```sh
+./target/release/mds_backend
 ```
 
 ## Сервер
