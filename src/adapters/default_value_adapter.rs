@@ -61,22 +61,26 @@ impl DefaultValueAdapter for DefaultValueRepository {
     }
 
     async fn get_tariff(&self) -> Result<Tariff, AppError> {
-        query_as::<_, Tariff>("SELECT tariff FROM default_value WHERE id = 1")
-            .fetch_one(&*self.pool)
-            .await
-            .map_err(|e| {
-                error!("Database error: {e}");
-                AppError::NotFound
-            })
+        query_as::<_, Tariff>(
+            "SELECT * FROM tariff WHERE name = (SELECT tariff FROM default_value WHERE id = 1)",
+        )
+        .fetch_one(&*self.pool)
+        .await
+        .map_err(|e| {
+            error!("Database error: {e}");
+            AppError::NotFound
+        })
     }
 
     async fn get_role(&self) -> Result<Role, AppError> {
-        query_as::<_, Role>("SELECT role FROM default_value WHERE id = 1")
-            .fetch_one(&*self.pool)
-            .await
-            .map_err(|e| {
-                error!("Database error: {e}");
-                AppError::NotFound
-            })
+        query_as::<_, Role>(
+            "SELECT * FROM role WHERE name = (SELECT role FROM default_value WHERE id = 1)",
+        )
+        .fetch_one(&*self.pool)
+        .await
+        .map_err(|e| {
+            error!("Database error: {e}");
+            AppError::NotFound
+        })
     }
 }

@@ -3,13 +3,16 @@ mod application;
 pub mod config;
 pub mod di;
 mod httpserver;
-pub mod logger;
-mod models;
+mod logger;
+pub mod models;
+mod phoneparse;
 mod validate_email;
 
 use std::{error::Error, sync::Arc};
 
-use crate::di::{default_value_container, employee_container, role_container, tariff_container};
+use crate::di::{
+    client_container, default_value_container, employee_container, role_container, tariff_container,
+};
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
     let config = config::Config::build()?;
@@ -24,6 +27,10 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         postgres.clone(),
         default_value_container.repo.clone(),
     ));
+    let client_container = Arc::new(client_container::ClientContainer::new(
+        postgres.clone(),
+        default_value_container.repo.clone(),
+    ));
 
     let server = httpserver::Server::new(
         config.ip,
@@ -32,6 +39,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         role_container,
         default_value_container,
         employee_container,
+        client_container,
     );
     server.run().await;
 

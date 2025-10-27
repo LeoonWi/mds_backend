@@ -4,52 +4,36 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::routing::{get, patch, post};
 use axum::{Router, http::StatusCode};
-use serde::Deserialize;
 
 use crate::di::employee_container::EmployeeContainer;
-use crate::models::employee::Employee;
+use crate::models::employee::{CreateEmployee, Employee, FilterEmployee};
 use crate::models::error::AppError;
 
 pub fn employee_router(container: Arc<EmployeeContainer>) -> Router {
     Router::new()
         .route("/employee", post(create_employee))
         .route("/employee", get(get_employees))
-        .route("/employee/{email}", get(get_employee_by_email))
-        .route("/employee/dismiss", patch(dismiss_employee))
+        .route("/employee/dismiss/{email}", patch(dismiss_employee))
         .with_state(container)
-}
-
-#[derive(Deserialize)]
-struct CreateEmployee {
-    pub name: String,
-    pub last_name: String,
-    pub middle_name: Option<String>,
-    pub email: String,
-    pub password: String,
 }
 
 async fn create_employee(
     State(container): State<Arc<EmployeeContainer>>,
     Json(payload): Json<CreateEmployee>,
 ) -> Result<StatusCode, AppError> {
-    container
-        .logic
-        .create_employee(
-            payload.name,
-            payload.last_name,
-            payload.middle_name,
-            payload.email,
-            payload.password,
-        )
-        .await?;
+    container.logic.create_employee(payload).await?;
 
-    Ok(StatusCode::OK)
+    Ok(StatusCode::CREATED)
 }
 
-async fn get_employees(State(container): State<Arc<EmployeeContainer>>) -> Json<Vec<Employee>> {
-    Json(container.logic.get_employees().await)
+async fn get_employees(
+    State(container): State<Arc<EmployeeContainer>>,
+    Json(filter): Json<FilterEmployee>,
+) -> Json<Vec<Employee>> {
+    Json(container.logic.get_employees(filter).await)
 }
 
+#[allow(dead_code)]
 async fn get_employee_by_email(
     State(container): State<Arc<EmployeeContainer>>,
     Path(email): Path<String>,

@@ -1,5 +1,6 @@
+pub mod client_adapter;
 pub mod default_value_adapter;
-pub mod employee;
+pub mod employee_adapter;
 pub mod role_adapter;
 pub mod tariff_adapter;
 

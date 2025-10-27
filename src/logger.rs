@@ -31,6 +31,7 @@ pub fn init_dev_logger() {
         .init();
 }
 
+#[allow(dead_code)]
 pub fn init_prod_logger() {
     // JSON-формат для продакшена
     let fmt_layer = fmt::layer().json();
