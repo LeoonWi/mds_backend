@@ -23,6 +23,9 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let default_value_container = Arc::new(default_value_container::DefaultValueContainer::new(
         postgres.clone(),
     ));
+    let service_container = Arc::new(di::service_container::ServiceContainer::new(
+        postgres.clone(),
+    ));
     let employee_container = Arc::new(employee_container::EmployeeContainer::new(
         postgres.clone(),
         default_value_container.repo.clone(),
@@ -38,6 +41,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         tariff_container,
         role_container,
         default_value_container,
+        service_container,
         employee_container,
         client_container,
     );

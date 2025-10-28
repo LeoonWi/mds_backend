@@ -57,6 +57,10 @@ where
 
     pub async fn create_client(&self, payload: CreateClient) -> Result<(), AppError> {
         // Валидация полей
+        if payload.name.is_empty() || payload.last_name.is_empty() {
+            return Err(AppError::BadRequest("Empty fullname user".to_owned()));
+        }
+
         if payload.password.len() < 6 {
             return Err(AppError::BadRequest(
                 "Password must be at least 6 characters".to_owned(),

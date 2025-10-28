@@ -160,8 +160,11 @@ type CreateClient = {
 
 Принимает в себя JSON объект **(FilterClient)**. Все поля опциональные!!!.
 
+UPD: Добавил поле id.
+
 ```typescript
 type FilterClient = {
+  id: number | underfined;
   name: string | undefined;
   last_name: string | undefined;
   middle_name: string | undefined;
@@ -221,10 +224,11 @@ type CreateEmployee = {
 
 Принимает JSON объект **(FilterEmployee)** в качестве фильтра. Все поля опциональные, т.е. могут полностью отсутствовать.
 
-UPD: `dismissed = false` чтобы получить список только работающих сотрудников.
+UPD: `dismissed = false` чтобы получить список только работающих сотрудников. Обновил фильтр.
 
 ```typescript
 type FilterEmployee = {
+  id: number | underfined;
   name: string | underfined;
   last_name: string | underfined;
   middle_name: string | underfined;
@@ -266,3 +270,45 @@ type Response = Employee[];
 - **404** и ошибку (AppError) [(см. выше)](#apperror) в случае ПРОВАЛА (Не найден пользователь);
 
 P.S. это запрос для увольнения сотрудника.
+
+### Услуги
+
+#### POST `/services`
+
+Принимает JSON объект **(CreateService)** и возвращает **201** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+```typescript
+type CreateService = {
+  name: String;
+};
+```
+
+#### GET `/services`
+
+Всегда возвращает статус **200** и массив объектов **(Service)** JSON.
+
+```typescript
+type Service = {
+  name: string;
+  created_at: string;
+  updated_at: string | null;
+};
+
+type Response = Service[];
+```
+
+#### GET `/services/{name}`
+
+Принимает в параметре URL имя сервиса _(string)_ и возвращает JSON объект **(Service)** со статусом **200**. Ошибку **(AppError)** [(см. выше)](#apperror) если объект был не найден.
+
+```typescript
+type Service = {
+  name: string;
+  created_at: string;
+  updated_at: string | null;
+};
+```
+
+#### DELETE `/services/{name}`
+
+Принимает в параметре URL имя сервиса _(string)_ и возвращает **200**, если объект был удален успешно. Вернет ошибку **(AppError)** [(см. выше)](#apperror) если объект был не найден.

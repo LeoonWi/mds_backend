@@ -62,17 +62,23 @@ CREATE TABLE IF NOT EXISTS "employee_specs" (
 	PRIMARY KEY ("employee_id", "service")
 );
 
+CREATE TYPE IF NOT EXISTS "priority" AS ENUM ('high', 'normal', 'low');
+CREATE TYPE IF NOT EXISTS "status" AS ENUM ('new', 'awaiting', 'in_work', 'assigned', 'on_review', 'on_approval', 'appoved', 'rejected');
+
 CREATE TABLE IF NOT EXISTS "request" (
 	"id" BIGSERIAL NOT NULL PRIMARY KEY,
 	"name" CHARACTER VARYING(255) NOT NULL,
 	"service" TEXT REFERENCES "service" ON UPDATE CASCADE ON DELETE SET NULL,
 	"owner_id" BIGINT NOT NULL REFERENCES "employee" ON UPDATE CASCADE ON DELETE CASCADE,
 	"employee_id" BIGINT REFERENCES "employee" ON UPDATE CASCADE ON DELETE RESTRICT,
-	"priority" SMALLINT NOT NULL, -- если будет фильтр - добавить индекс
+	"priority" priority NOT NULL,
 	"desc" TEXT NOT NULL,
-	"status" SMALLINT NOT NULL, -- если будет фильтр - добавить индекс
+	"status" status NOT NULL,
 	"created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updated_at" TIMESTAMPTZ,
 	"desired_at" TIMESTAMPTZ NOT NULL,
 	"closed_at" TIMESTAMPTZ
 );
+
+CREATE INDEX idx_employee_priority ON "request"("priority");
+CREATE INDEX idx_employee_status ON "request"("status");

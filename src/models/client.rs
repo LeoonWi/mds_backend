@@ -75,6 +75,7 @@ pub struct CreateClient {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FilterClient {
+    pub id: Option<i64>,
     pub name: Option<String>,
     pub last_name: Option<String>,
     pub middle_name: Option<String>,

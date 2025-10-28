@@ -70,6 +70,10 @@ impl EmployeeAdapter for EmployeeRepository {
             WHERE 1=1",
         );
 
+        if let Some(id) = filter.id {
+            query.push(" AND e.id = ").push_bind(id);
+        }
+
         if let Some(name) = filter.name {
             query.push(" AND e.name = ").push_bind(name);
         }

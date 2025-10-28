@@ -76,6 +76,10 @@ impl ClientAdapter for ClientRepository {
             WHERE 1=1",
         );
 
+        if let Some(id) = filter.id {
+            query.push(" AND e.id = ").push_bind(id);
+        }
+
         if let Some(name) = filter.name {
             query.push(" AND c.name = ").push_bind(name);
         }

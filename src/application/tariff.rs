@@ -30,6 +30,11 @@ where
         if name.is_empty() {
             return Err(AppError::BadRequest("Empty name tariff".to_owned()));
         }
+
+        if self.repo.get_by_name(name.clone()).await.is_ok() {
+            return Err(AppError::Conflict);
+        }
+
         self.repo.save(name).await
     }
 

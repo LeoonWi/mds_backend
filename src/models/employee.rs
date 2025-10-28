@@ -67,6 +67,7 @@ pub struct CreateEmployee {
 
 #[derive(Deserialize)]
 pub struct FilterEmployee {
+    pub id: Option<i64>,
     pub name: Option<String>,
     pub last_name: Option<String>,
     pub middle_name: Option<String>,
