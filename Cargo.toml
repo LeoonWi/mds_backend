@@ -23,6 +23,7 @@ sqlx = { version = "0.8.6", features = [
     "chrono",
     "postgres",
     "derive",
+    "macros",
 ] }
 dotenv = "0.15.0"
 tracing = "0.1"

@@ -1,6 +1,8 @@
 mod client_handler;
 mod employee_handler;
+mod request_handler;
 mod role_handler;
+mod service_handler;
 mod tariff_handler;
 
 use std::sync::Arc;
@@ -16,11 +18,15 @@ use tower_http::trace::TraceLayer;
 use crate::di::client_container::ClientContainer;
 use crate::di::default_value_container::DefaultValueContainer;
 use crate::di::employee_container::EmployeeContainer;
+use crate::di::request_container::RequestContainer;
 use crate::di::role_container::RoleContainer;
+use crate::di::service_container::ServiceContainer;
 use crate::di::tariff_container::TariffContainer;
 use crate::httpserver::client_handler::client_router;
 use crate::httpserver::employee_handler::employee_router;
+use crate::httpserver::request_handler::request_router;
 use crate::httpserver::role_handler::role_router;
+use crate::httpserver::service_handler::service_router;
 use crate::httpserver::tariff_handler::tariff_router;
 use crate::logger;
 use crate::models::error::AppError;
@@ -61,8 +67,10 @@ pub struct Server {
     tariff: Arc<TariffContainer>,
     role: Arc<RoleContainer>,
     default_value: Arc<DefaultValueContainer>,
+    service: Arc<ServiceContainer>,
     employee: Arc<EmployeeContainer>,
     client: Arc<ClientContainer>,
+    request: Arc<RequestContainer>,
 }
 
 impl Server {
@@ -72,8 +80,10 @@ impl Server {
         tariff: Arc<TariffContainer>,
         role: Arc<RoleContainer>,
         default_value: Arc<DefaultValueContainer>,
+        service: Arc<ServiceContainer>,
         employee: Arc<EmployeeContainer>,
         client: Arc<ClientContainer>,
+        request: Arc<RequestContainer>,
     ) -> Self {
         Server {
             ip,
@@ -81,8 +91,10 @@ impl Server {
             tariff,
             role,
             default_value,
+            service,
             employee,
             client,
+            request,
         }
     }
 
@@ -93,15 +105,19 @@ impl Server {
         // init routers application
         let tariff_router = tariff_router(self.tariff);
         let role_router = role_router(self.role);
+        let service_router = service_router(self.service);
         let employee_router = employee_router(self.employee);
         let client_router = client_router(self.client);
+        let request_router = request_router(self.request);
 
         // init root router
         let app = Router::new()
             .merge(tariff_router)
             .merge(role_router)
+            .merge(service_router)
             .merge(employee_router)
             .merge(client_router)
+            .merge(request_router)
             .layer(
                 TraceLayer::new_for_http()
                     .make_span_with(|req: &Request| {

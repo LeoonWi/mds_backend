@@ -160,8 +160,11 @@ type CreateClient = {
 
 Принимает в себя JSON объект **(FilterClient)**. Все поля опциональные!!!.
 
+UPD: Добавил поле id.
+
 ```typescript
 type FilterClient = {
+  id: number | underfined;
   name: string | undefined;
   last_name: string | undefined;
   middle_name: string | undefined;
@@ -221,10 +224,11 @@ type CreateEmployee = {
 
 Принимает JSON объект **(FilterEmployee)** в качестве фильтра. Все поля опциональные, т.е. могут полностью отсутствовать.
 
-UPD: `dismissed = false` чтобы получить список только работающих сотрудников.
+UPD: `dismissed = false` чтобы получить список только работающих сотрудников. Обновил фильтр.
 
 ```typescript
 type FilterEmployee = {
+  id: number | underfined;
   name: string | underfined;
   last_name: string | underfined;
   middle_name: string | underfined;
@@ -266,3 +270,128 @@ type Response = Employee[];
 - **404** и ошибку (AppError) [(см. выше)](#apperror) в случае ПРОВАЛА (Не найден пользователь);
 
 P.S. это запрос для увольнения сотрудника.
+
+### Услуги
+
+#### POST `/services`
+
+Принимает JSON объект **(CreateService)** и возвращает **201** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+```typescript
+type CreateService = {
+  name: String;
+};
+```
+
+#### GET `/services`
+
+Всегда возвращает статус **200** и массив объектов **(Service)** JSON.
+
+```typescript
+type Service = {
+  name: string;
+  created_at: string;
+  updated_at: string | null;
+};
+
+type Response = Service[];
+```
+
+#### GET `/services/{name}`
+
+Принимает в параметре URL имя сервиса _(string)_ и возвращает JSON объект **(Service)** со статусом **200**. Ошибку **(AppError)** [(см. выше)](#apperror) если объект был не найден.
+
+```typescript
+type Service = {
+  name: string;
+  created_at: string;
+  updated_at: string | null;
+};
+```
+
+#### DELETE `/services/{name}`
+
+Принимает в параметре URL имя сервиса _(string)_ и возвращает **200**, если объект был удален успешно. Вернет ошибку **(AppError)** [(см. выше)](#apperror) если объект был не найден.
+
+### Заявки
+
+#### POST `/requests`
+
+Принимает JSON объект **(CreateRequest)** и возвращает **201** в случае _УСПЕХА_. В случае _ПРОВАЛА_ вернет ошибку **(AppError)** [(см. выше)](#apperror).
+
+```typescript
+type CreateRequest = {
+  name: string;
+  service: string;
+  owner_id: number;
+  employee_id: number;
+  priority: "high" | "normal" | "low";
+  desc: string;
+  desired_at: string; // datetime in format utc
+};
+```
+
+#### GET `/requests`
+
+Принимает JSON объект **(FilterRequest)**.
+
+```typescript
+type Priority =
+  | "new"
+  | "awaiting"
+  | "in_work"
+  | "assigned"
+  | "on_review"
+  | "on_approval"
+  | "approved"
+  | "rejected";
+
+type Status = "high" | "normal" | "low";
+
+type FilterRequest = {
+  id: number | undefined;
+  name: string | undefined;
+  service: string | undefined;
+  owner_id: number | undefined;
+  employee_id: number | undefined;
+  priority: Priority | undefined;
+  status: Status | undefined;
+  desired_at: string | undefined;
+};
+```
+
+Возвращает JSON массив объектов **(Request)** и статус **200**. Массив может быть пустым, если объекты не найдены.
+
+#### PATCH `/requests/{id}/set_status={status}`
+
+Принимает в параметры запроса **id** заявки типа `number` и **status** типа `string` с возможными варинтами `'high'` | `'normal'` | `'low'`.
+
+Вернет статус **200** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+#### PATCH `/requests/{id}/set_priority={priority}`
+
+Принимает в параметры запроса **id** заявки типа `number` и **priority** типа `Priority (string)`.
+
+```typescript
+type Priority =
+  | "new"
+  | "awaiting"
+  | "in_work"
+  | "assigned"
+  | "on_review"
+  | "on_approval"
+  | "approved"
+  | "rejected";
+```
+
+Вернет статус **200** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+#### PATCH `/requests/{id}/set_employee={employee_id}`
+
+Принимает в параметры запроса **id** заявки типа `number` и **employee_id** типа `number`.
+
+Вернет статус **200** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+#### DELETE `/requests/{id}`
+
+Принимает в параметры запроса **id** заявки типа `number` и возвращает статус **200** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.

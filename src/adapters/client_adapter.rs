@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 use sqlx::{PgPool, QueryBuilder, query, query_as};
 use tracing::error;
 
@@ -75,6 +74,10 @@ impl ClientAdapter for ClientRepository {
             INNER JOIN tariff AS t ON t.name = c.tariff
             WHERE 1=1",
         );
+
+        if let Some(id) = filter.id {
+            query.push(" AND c.id = ").push_bind(id);
+        }
 
         if let Some(name) = filter.name {
             query.push(" AND c.name = ").push_bind(name);

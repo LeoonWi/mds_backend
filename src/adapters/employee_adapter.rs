@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 use sqlx::{PgPool, Postgres, QueryBuilder, query, query_as};
 use tracing::error;
 
@@ -69,6 +68,10 @@ impl EmployeeAdapter for EmployeeRepository {
             INNER JOIN role AS r ON e.role = r.name
             WHERE 1=1",
         );
+
+        if let Some(id) = filter.id {
+            query.push(" AND e.id = ").push_bind(id);
+        }
 
         if let Some(name) = filter.name {
             query.push(" AND e.name = ").push_bind(name);
