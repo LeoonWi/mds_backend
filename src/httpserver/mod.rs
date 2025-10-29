@@ -1,5 +1,6 @@
 mod client_handler;
 mod employee_handler;
+mod jwt;
 mod request_handler;
 mod role_handler;
 mod service_handler;
