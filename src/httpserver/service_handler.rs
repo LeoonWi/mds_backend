@@ -52,7 +52,7 @@ async fn delete_service(
     State(container): State<Arc<ServiceContainer>>,
     Path(name): Path<String>,
 ) -> Result<StatusCode, AppError> {
-    container.service.create(name).await?;
+    container.service.delete_service(name).await?;
 
     Ok(StatusCode::OK)
 }

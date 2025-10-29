@@ -1,7 +1,7 @@
 pub mod client_adapter;
 pub mod default_value_adapter;
 pub mod employee_adapter;
-// pub mod request_adapter;
+pub mod request_adapter;
 pub mod role_adapter;
 pub mod service_adapter;
 pub mod tariff_adapter;

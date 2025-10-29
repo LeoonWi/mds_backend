@@ -40,4 +40,8 @@ impl<R: ServiceAdapter> ServiceLogic<R> {
     pub async fn get_by_name(&self, name: String) -> Result<Service, AppError> {
         self.repo.get_by_name(name).await
     }
+
+    pub async fn delete_service(&self, name: String) -> Result<(), AppError> {
+        self.repo.delete(name).await
+    }
 }

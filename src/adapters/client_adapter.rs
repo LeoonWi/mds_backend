@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 use sqlx::{PgPool, QueryBuilder, query, query_as};
 use tracing::error;
 
@@ -77,7 +76,7 @@ impl ClientAdapter for ClientRepository {
         );
 
         if let Some(id) = filter.id {
-            query.push(" AND e.id = ").push_bind(id);
+            query.push(" AND c.id = ").push_bind(id);
         }
 
         if let Some(name) = filter.name {

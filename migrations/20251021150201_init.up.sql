@@ -62,15 +62,15 @@ CREATE TABLE IF NOT EXISTS "employee_specs" (
 	PRIMARY KEY ("employee_id", "service")
 );
 
-CREATE TYPE IF NOT EXISTS "priority" AS ENUM ('high', 'normal', 'low');
-CREATE TYPE IF NOT EXISTS "status" AS ENUM ('new', 'awaiting', 'in_work', 'assigned', 'on_review', 'on_approval', 'appoved', 'rejected');
+CREATE TYPE "priority" AS ENUM ('high', 'normal', 'low');
+CREATE TYPE "status" AS ENUM ('new', 'awaiting', 'in_work', 'assigned', 'on_review', 'on_approval', 'approved', 'rejected');
 
 CREATE TABLE IF NOT EXISTS "request" (
 	"id" BIGSERIAL NOT NULL PRIMARY KEY,
 	"name" CHARACTER VARYING(255) NOT NULL,
 	"service" TEXT REFERENCES "service" ON UPDATE CASCADE ON DELETE SET NULL,
-	"owner_id" BIGINT NOT NULL REFERENCES "employee" ON UPDATE CASCADE ON DELETE CASCADE,
-	"employee_id" BIGINT REFERENCES "employee" ON UPDATE CASCADE ON DELETE RESTRICT,
+	"owner_id" BIGINT NOT NULL REFERENCES "user" ON UPDATE CASCADE ON DELETE CASCADE,
+	"employee_id" BIGINT NOT NULL REFERENCES "employee" ON UPDATE CASCADE ON DELETE RESTRICT,
 	"priority" priority NOT NULL,
 	"desc" TEXT NOT NULL,
 	"status" status NOT NULL,

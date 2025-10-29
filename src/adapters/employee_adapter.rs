@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 use sqlx::{PgPool, Postgres, QueryBuilder, query, query_as};
 use tracing::error;
 
