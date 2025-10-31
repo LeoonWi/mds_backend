@@ -1,4 +1,3 @@
-use std::clone;
 use std::sync::Arc;
 
 use sqlx::PgPool;

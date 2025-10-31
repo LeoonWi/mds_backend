@@ -4,7 +4,7 @@ use sqlx::{PgPool, Postgres, QueryBuilder, query, query_as};
 use tracing::error;
 
 use crate::application::employee::EmployeeAdapter;
-use crate::models::employee::{EmployeeFlat, FilterEmployee};
+use crate::models::employee::{EmployeeFlat, EmployeeWithService, FilterEmployee, Role};
 use crate::models::error::AppError;
 
 pub struct EmployeeRepository {
@@ -24,7 +24,7 @@ impl EmployeeAdapter for EmployeeRepository {
         last_name: String,
         middle_name: Option<String>,
         email: String,
-        role: String,
+        role: Role,
         dismissed: bool,
         password: String,
     ) -> Result<(), AppError> {
@@ -58,14 +58,11 @@ impl EmployeeAdapter for EmployeeRepository {
                 e.middle_name,
                 e.email,
                 e.password,
+                e.role,
                 e.dismissed,
                 e.created_at,
-                e.updated_at,
-                r.name AS role_name,
-                r.created_at AS role_created_at,
-                r.updated_at AS role_updated_at
+                e.updated_at
             FROM employee AS e
-            INNER JOIN role AS r ON e.role = r.name
             WHERE 1=1",
         );
 
@@ -116,14 +113,11 @@ impl EmployeeAdapter for EmployeeRepository {
                 e.middle_name,
                 e.email,
                 e.password,
+                e.role,
                 e.dismissed,
                 e.created_at,
-                e.updated_at,
-                r.name AS role_name,
-                r.created_at AS role_created_at,
-                r.updated_at AS role_updated_at
+                e.updated_at
             FROM employee AS e
-            INNER JOIN role AS r ON e.role = r.name
             WHERE e.email = $1",
         )
         .bind(email)
@@ -150,5 +144,120 @@ impl EmployeeAdapter for EmployeeRepository {
         }
 
         Ok(())
+    }
+
+    async fn change_role(&self, email: String, role: Role) -> Result<(), AppError> {
+        let row = query("UPDATE employee SET role = $1 WHERE email = $2")
+            .bind(role)
+            .bind(email)
+            .execute(&*self.pool)
+            .await
+            .map_err(|e| {
+                error!("Database error: {e}");
+                AppError::InternalServerError
+            })?;
+
+        if row.rows_affected() == 0 {
+            return Err(AppError::NotFound);
+        }
+
+        Ok(())
+    }
+
+    async fn add_service(&self, id: i64, service: String) -> Result<(), AppError> {
+        let row = query("INSERT into employee_specs (employee_id, service) VALUES ($1, $2) ON CONFLICT (employee_id, service) DO NOTHING")
+            .bind(id)
+            .bind(service)
+            .execute(&*self.pool)
+            .await
+            .map_err(|e| {
+                error!("Database error: {e}");
+                AppError::InternalServerError
+            })?;
+
+        if row.rows_affected() == 0 {
+            return Err(AppError::Conflict);
+        }
+
+        Ok(())
+    }
+
+    async fn remove_service(&self, id: i64, service: String) -> Result<(), AppError> {
+        let row = query("DELETE FROM employee_specs WHERE employee_id = $1 AND service = $2")
+            .bind(id)
+            .bind(service)
+            .execute(&*self.pool)
+            .await
+            .map_err(|e| {
+                error!("Database error: {e}");
+                AppError::InternalServerError
+            })?;
+
+        if row.rows_affected() == 0 {
+            return Err(AppError::NotFound);
+        }
+
+        Ok(())
+    }
+
+    async fn get_with_services(
+        &self,
+        filter: FilterEmployee,
+    ) -> Result<Vec<EmployeeWithService>, AppError> {
+        let mut query: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+            "SELECT
+                e.id,
+                e.name,
+                e.last_name,
+                e.middle_name,
+                e.email,
+                e.role,
+                e.dismissed,
+                e.created_at,
+                e.updated_at,
+                COALESCE(ARRAY_AGG(es.service) FILTER (WHERE es.service IS NOT NULL), '{}') AS services
+            FROM employee AS e
+            LEFT JOIN employee_specs AS es ON e.id = es.employee_id
+            WHERE 1=1",
+        );
+
+        if let Some(id) = filter.id {
+            query.push(" AND e.id = ").push_bind(id);
+        }
+
+        if let Some(name) = filter.name {
+            query.push(" AND e.name = ").push_bind(name);
+        }
+
+        if let Some(last_name) = filter.last_name {
+            query.push(" AND e.last_name = ").push_bind(last_name);
+        }
+
+        if let Some(middle_name) = filter.middle_name {
+            query.push(" AND e.middle_name = ").push_bind(middle_name);
+        }
+
+        if let Some(email) = filter.email {
+            query.push(" AND e.email = ").push_bind(email);
+        }
+
+        if let Some(role) = filter.role {
+            query.push(" AND e.role = ").push_bind(role);
+        }
+
+        if let Some(dismissed) = filter.dismissed {
+            query.push(" AND e.dismissed = ").push_bind(dismissed);
+        }
+
+        query.push(" GROUP BY e.id ORDER BY e.id");
+
+        query
+            .build_query_as::<EmployeeWithService>()
+            .fetch_all(&*self.pool)
+            .await
+            .map_err(|e| {
+                error!("Database error: {e}");
+                AppError::InternalServerError
+            })
     }
 }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use sqlx::{PgPool, Postgres, QueryBuilder, query, query_as};
+use sqlx::{PgPool, Postgres, QueryBuilder, query};
 use tracing::error;
 
 use crate::application::request::RequestAdapter;
@@ -68,16 +68,12 @@ impl RequestAdapter for RequestRepository {
                 c.middle_name AS owner_middle_name,
                 c.email AS owner_email,
                 c.phone AS owner_phone,
+                c.tariff AS owner_tariff,
                 c.password AS owner_password,
                 c.inn AS owner_inn,
                 c.snils AS owner_snils,
                 c.created_at AS owner_created_at,
                 c.updated_at AS owner_updated_at,
-
-                -- tariff from user
-                t.name AS owner_tariff_name,
-                t.created_at AS owner_tariff_created_at,
-                t.updated_at AS owner_tariff_updated_at,
 
                 -- employee
                 e.id AS employee_id,
@@ -86,20 +82,15 @@ impl RequestAdapter for RequestRepository {
                 e.middle_name AS employee_middle_name,
                 e.email AS employee_email,
                 e.password AS employee_password,
+                e.role AS employee_role,
                 e.dismissed AS employee_dismissed,
                 e.created_at AS employee_created_at,
-                e.updated_at AS employee_updated_at,
+                e.updated_at AS employee_updated_at
 
-                -- role from employee
-                er.name AS employee_role_name,
-                er.created_at AS employee_role_created_at,
-                er.updated_at AS employee_role_updated_at
                 FROM request AS r
                 LEFT JOIN service AS s ON s.name = r.service
                 INNER JOIN \"user\" AS c ON c.id = r.owner_id
-                INNER JOIN tariff AS t ON t.name = c.tariff
                 LEFT JOIN employee AS e ON e.id = r.employee_id
-                LEFT JOIN role AS er ON er.name = e.role
                 WHERE 1=1
                 ",
         );
@@ -135,6 +126,8 @@ impl RequestAdapter for RequestRepository {
         if let Some(desired_at) = filter.desired_at {
             query.push(" AND r.desired_at = ").push_bind(desired_at);
         }
+
+        query.push(" ORDER BY r.created_at DESC");
 
         query
             .build_query_as::<RequestFlat>()

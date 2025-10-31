@@ -2,11 +2,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::models::client::Client;
-use crate::models::employee::Employee;
-use crate::models::role::Role;
+use crate::models::client::{Client, Tariff};
+use crate::models::employee::{Employee, Role};
 use crate::models::service::Service;
-use crate::models::tariff::Tariff;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "priority", rename_all = "lowercase")]
@@ -56,27 +54,23 @@ pub struct RequestFlat {
     pub owner_email: String,
     pub owner_phone: String,
     pub owner_password: String,
+    pub owner_tariff: Tariff,
     pub owner_inn: Option<String>,
     pub owner_snils: String,
     pub owner_created_at: DateTime<Utc>,
     pub owner_updated_at: Option<DateTime<Utc>>,
-    pub owner_tariff_name: String,
-    pub owner_tariff_created_at: DateTime<Utc>,
-    pub owner_tariff_updated_at: Option<DateTime<Utc>>,
 
     // employee
-    pub employee_id: i64,
-    pub employee_name: String,
-    pub employee_last_name: String,
+    pub employee_id: Option<i64>,
+    pub employee_name: Option<String>,
+    pub employee_last_name: Option<String>,
     pub employee_middle_name: Option<String>,
-    pub employee_email: String,
-    pub employee_password: String,
-    pub employee_dismissed: bool,
-    pub employee_created_at: DateTime<Utc>,
+    pub employee_email: Option<String>,
+    pub employee_password: Option<String>,
+    pub employee_dismissed: Option<bool>,
+    pub employee_created_at: Option<DateTime<Utc>>,
     pub employee_updated_at: Option<DateTime<Utc>>,
-    pub employee_role_name: String,
-    pub employee_role_created_at: DateTime<Utc>,
-    pub employee_role_updated_at: Option<DateTime<Utc>>,
+    pub employee_role: Option<Role>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -85,7 +79,7 @@ pub struct Request {
     name: String,
     service: Option<Service>,
     owner: Client,
-    employee: Employee,
+    employee: Option<Employee>,
     priority: Priority,
     desc: String,
     status: Status,
@@ -115,30 +109,25 @@ impl From<RequestFlat> for Request {
                 middle_name: value.owner_middle_name,
                 email: value.owner_email,
                 phone: value.owner_phone,
-                tariff: Tariff {
-                    name: value.owner_tariff_name,
-                    created_at: value.owner_tariff_created_at,
-                    updated_at: value.owner_tariff_updated_at,
-                },
+                tariff: value.owner_tariff,
                 inn: value.owner_inn,
                 snils: value.owner_snils,
                 created_at: value.owner_created_at,
                 updated_at: value.owner_updated_at,
             },
-            employee: Employee {
-                id: value.employee_id,
-                name: value.employee_name,
-                last_name: value.employee_last_name,
-                middle_name: value.employee_middle_name,
-                email: value.employee_email,
-                role: Role {
-                    name: value.employee_role_name,
-                    created_at: value.employee_role_created_at,
-                    updated_at: value.employee_role_updated_at,
-                },
-                dismissed: value.employee_dismissed,
-                created_at: value.employee_created_at,
-                updated_at: value.employee_updated_at,
+            employee: match value.employee_id {
+                Some(_) => Some(Employee {
+                    id: value.employee_id.unwrap(),
+                    name: value.employee_name.unwrap(),
+                    last_name: value.employee_last_name.unwrap(),
+                    middle_name: value.employee_middle_name,
+                    email: value.employee_email.unwrap(),
+                    role: value.employee_role.unwrap(),
+                    dismissed: value.employee_dismissed.unwrap(),
+                    created_at: value.employee_created_at.unwrap(),
+                    updated_at: value.employee_updated_at,
+                }),
+                None => None,
             },
             priority: value.priority,
             desc: value.desc,
@@ -156,7 +145,7 @@ pub struct CreateRequest {
     pub name: String,
     pub service: String,
     pub owner_id: i64,
-    pub employee_id: i64,
+    pub employee_id: Option<i64>,
     pub priority: Priority,
     pub desc: String,
     pub desired_at: DateTime<Utc>,

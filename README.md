@@ -28,23 +28,6 @@ sqlx migrate run --database-url=postgres://postgres:admin@localhost:5433/mds?ssl
 
 ```
 
-#### Установка базовых значений
-
-Имея готовые к работе таблицы, необходимо загрузить в них некоторые данные, которые необходимы для работы системы.
-
-Для Windows:
-
-```powershell
-Get-Content init.sql | docker exec -i {db_container_name} psql -U {POSTGRES_USER} -d {POSTGRES_DB}
-
-```
-
-Для Linux:
-
-```sh
-docker exec -i {db_container_name} psql -U {POSTGRES_USER} -d {POSTGRES_DB} < init.sql
-```
-
 #### Сборка и запуск сервера
 
 ##### Сборка
@@ -82,6 +65,14 @@ cargo build -r
 
 ### Информация перед использованием
 
+#### Аутентификация
+
+Для обработчиков которые работают без авторизации, рядом с URL путем будет надпись **ОТКРЫТ**. Для всех остальных необходимо передавать заголовок **Authorization** и **access_token** с префиксом **Bearer** через пробел. Ниже пример.
+Пример заголовка **Authorization**.
+`Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwicm9sZSI6InN1cGVydXNlciIsImV4cCI6MTc2MjUyNTM0NX0.ZJeMFYf1v8e-AdPvb1J2ad426n04QLmapn2Yp7fBFZo`
+
+#### Ошибки
+
 Кроме описаных ниже статус кодов или ошибок, сервер также может вернуть и другие значения, которые описаны здесь.
 
 - **415** `Unsupported Media Type` — это клиентская ошибка HTTP, которая указывает, что сервер отказывается принимать запрос, потому что формат содержимого в теле запроса не поддерживается (например, JSON вместо XML или form-data вместо ожидаемого типа).
@@ -91,8 +82,11 @@ cargo build -r
   **Возвращает строку.**
 - **405** `Method Not Allowed` — это ошибка некорректного роутинга. Например, в `POST /clients` попытаться обраться с помощью `PUT`.
   **\*Возвращает строку.**
+- **401** `Unauthorized` — запрос требует аутентификации (jwt_token). Клиент не предоставил валидные учётные данные.
+- **403** `Forbidden` — клиент аутентифицирован, но не имеет прав на доступ к ресурсу.
+  Например, обычный пользователь пытается удалить админский пост.
 
-Общие объекты:
+#### Общие объекты:
 
 #### AppError
 
@@ -103,41 +97,9 @@ type AppError = {
 };
 ```
 
-### Роли
-
-#### GET `/roles`
-
-Возвращает всегда **массив** объектов **(ролей)** в JSON. Массив может оказаться **пустым**, если возникнет ошибка или ролей не будет.
-
-```typescript
-type Role = {
-  name: string;
-  created_at: string;
-  updated_at: string | null;
-};
-
-type Response = Role[];
-```
-
-### Тарифы
-
-#### GET `/tariffs`
-
-Возвращает всегда **массив** объектов **(тарифов)** в JSON. Массив может оказаться **пустым**, если возникнет ошибка или тарифов не будет.
-
-```typescript
-type Tariff = {
-  name: string;
-  created_at: string;
-  updated_at: string | null;
-};
-
-type Response = Tariff[];
-```
-
 ### Клиенты
 
-#### POST `/signup`
+#### POST `/signup` ОТКРЫТ
 
 Принимает в себя объект **(CreateClient)** в JSON.
 
@@ -156,6 +118,37 @@ type CreateClient = {
 
 Возвращает статус код **201** в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в JSON в случае _ПРОВАЛА_.
 
+#### POST `/clients/login` ОТКРЫТ
+
+Принимает JSON объект **(LoginClients)**.
+
+```typescript
+type LoginClients = {
+  email: string;
+  password: string;
+};
+```
+
+Вернет статус **200** и JSON объект (**Token**) в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+```typescript
+type Token = {
+  access_token: string;
+  refresh_token: string;
+};
+```
+
+#### POST `/clients/refresh_token`
+
+В заголовке авторизации передать **ВНИМАНИЕ** - `refresh_token`. На выходе вернет статус **200** и JSON объект (**Token**) в случае УСПЕХА или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+```typescript
+type Token = {
+  access_token: string;
+  refresh_token: string;
+};
+```
+
 #### GET `/clients`
 
 Принимает в себя JSON объект **(FilterClient)**. Все поля опциональные!!!.
@@ -163,6 +156,8 @@ type CreateClient = {
 UPD: Добавил поле id.
 
 ```typescript
+type Tariff = "free" | "business";
+
 type FilterClient = {
   id: number | underfined;
   name: string | undefined;
@@ -170,18 +165,14 @@ type FilterClient = {
   middle_name: string | undefined;
   email: string | undefined;
   phone: string | undefined;
-  tariff: string | undefined;
+  tariff: Tariff | undefined;
 };
 ```
 
 Всегда возвращает статус **200** JSON массив объектов **(клиентов)**.
 
 ```typescript
-type Tariff = {
-  name: string;
-  created_at: string;
-  updated_at: string | null;
-};
+type Tariff = "free" | "business";
 
 type Client = {
   id: number;
@@ -190,7 +181,7 @@ type Client = {
   middle_name: string | null;
   email: string;
   phone: string;
-  tariff: Tariff;
+  tariff: Tariff; // это string
   inn: string | null;
   snils: string;
   created_at: string;
@@ -220,6 +211,37 @@ type CreateEmployee = {
 };
 ```
 
+#### POST `/employee/login` ОТКРЫТ
+
+Принимает JSON объект **(LoginEmployee)**.
+
+```typescript
+type LoginEmployee = {
+  email: string;
+  password: string;
+};
+```
+
+Вернет статус **200** и JSON объект (**Token**) в случае _УСПЕХА_ или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+```typescript
+type Token = {
+  access_token: string;
+  refresh_token: string;
+};
+```
+
+#### POST `/employee/refresh_token`
+
+В заголовке авторизации передать **ВНИМАНИЕ** - `refresh_token`. На выходе вернет статус **200** и JSON объект (**Token**) в случае УСПЕХА или ошибку **(AppError)** [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+```typescript
+type Token = {
+  access_token: string;
+  refresh_token: string;
+};
+```
+
 #### GET `/employee`
 
 Принимает JSON объект **(FilterEmployee)** в качестве фильтра. Все поля опциональные, т.е. могут полностью отсутствовать.
@@ -227,13 +249,15 @@ type CreateEmployee = {
 UPD: `dismissed = false` чтобы получить список только работающих сотрудников. Обновил фильтр.
 
 ```typescript
+type Role = "superuser" | "manager" | "employee";
+
 type FilterEmployee = {
   id: number | underfined;
   name: string | underfined;
   last_name: string | underfined;
   middle_name: string | underfined;
   email: string | underfined;
-  role: string | underfined;
+  role: Role | underfined;
   dismissed: string | underfined;
 };
 ```
@@ -241,11 +265,7 @@ type FilterEmployee = {
 Возвращает всегда JSON массив объектов **Employee** и статус **200**.
 
 ```typescript
-type Role = {
-  name: string;
-  created_at: string;
-  updated_at: string | null;
-};
+type Role = "superuser" | "manager" | "employee";
 
 type Employee = {
   id: number;
@@ -253,7 +273,7 @@ type Employee = {
   last_name: string;
   middle_name: string | null;
   email: string;
-  role: Role;
+  role: Role; // это тоже string
   dismissed: boolean;
   created_at: string;
   updated_at: string | null;
@@ -261,6 +281,67 @@ type Employee = {
 
 type Response = Employee[];
 ```
+
+#### GET `/employee_with_services`
+
+Принимает JSON объект **(FilterEmployee)** в качестве фильтра. Все поля опциональные, т.е. могут полностью отсутствовать.
+
+```typescript
+type Role = "superuser" | "manager" | "employee";
+
+type FilterEmployee = {
+  id: number | underfined;
+  name: string | underfined;
+  last_name: string | underfined;
+  middle_name: string | underfined;
+  email: string | underfined;
+  role: Role | underfined;
+  dismissed: string | underfined;
+};
+```
+
+Возвращает всегда JSON массив объектов **EmployeeWithServices** и статус **200**.
+
+```typescript
+type Role = "superuser" | "manager" | "employee";
+
+type EmployeeWithServices = {
+  id: number;
+  name: string;
+  last_name: string;
+  middle_name: string | null;
+  email: string;
+  role: Role; // это тоже string
+  dismissed: boolean;
+  created_at: string;
+  updated_at: string | null;
+  services: string[];
+};
+
+type Response = EmployeeWithServices[];
+```
+
+#### PATCH `/employee/{email}/set_role={role}`
+
+Принимает 2 строки:
+
+- email
+- role = `Role = "superuser" | "manager" | "employee"`
+
+Возвращает:
+
+- **200** в случае _УСПЕХА_;
+- **404** и ошибку (**AppError**) [(см. выше)](#apperror) в случае _ПРОВАЛА_ (Не найден пользователь);
+
+#### PATCH `/employee/{id}/add_service={service}`
+
+Принимает id сотрудника (`number`) и название услуги (`string`).
+Вернет **200** в случае _УСПЕХА_ или ошибку (**AppError**) [(см. выше)](#apperror) в случае _ПРОВАЛА_.
+
+#### PATCH `/employee/{id}/remove_service={service}`
+
+Принимает id сотрудника (`number`) и название услуги (`string`).
+Вернет **200** в случае _УСПЕХА_ или ошибку (**AppError**) [(см. выше)](#apperror) в случае _ПРОВАЛА_.
 
 #### PATCH `/employee/dismiss/{email}`
 
@@ -283,7 +364,7 @@ type CreateService = {
 };
 ```
 
-#### GET `/services`
+#### GET `/services` ОТКРЫТ
 
 Всегда возвращает статус **200** и массив объектов **(Service)** JSON.
 
@@ -297,7 +378,7 @@ type Service = {
 type Response = Service[];
 ```
 
-#### GET `/services/{name}`
+#### GET `/services/{name}` ОТКРЫТ
 
 Принимает в параметре URL имя сервиса _(string)_ и возвращает JSON объект **(Service)** со статусом **200**. Ошибку **(AppError)** [(см. выше)](#apperror) если объект был не найден.
 

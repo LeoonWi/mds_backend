@@ -2,9 +2,15 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::models::tariff::Tariff;
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "tariff", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
+pub enum Tariff {
+    Free,
+    Business,
+}
 
-#[derive(FromRow)]
+#[derive(Debug, FromRow)]
 pub struct ClientFlat {
     pub id: i64,
     pub name: String,
@@ -13,18 +19,14 @@ pub struct ClientFlat {
     pub email: String,
     pub phone: String,
     pub password: String,
+    pub tariff: Tariff,
     pub inn: Option<String>,
     pub snils: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
-
-    // tariff data
-    pub tariff_name: String,
-    pub tariff_created_at: DateTime<Utc>,
-    pub tariff_updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Client {
     pub id: i64,
     pub name: String,
@@ -41,18 +43,14 @@ pub struct Client {
 
 impl From<ClientFlat> for Client {
     fn from(value: ClientFlat) -> Self {
-        Self {
+        Client {
             id: value.id,
             name: value.name,
             last_name: value.last_name,
             middle_name: value.middle_name,
             email: value.email,
             phone: value.phone,
-            tariff: Tariff {
-                name: value.tariff_name,
-                created_at: value.tariff_created_at,
-                updated_at: value.tariff_updated_at,
-            },
+            tariff: value.tariff,
             inn: value.inn,
             snils: value.snils,
             created_at: value.created_at,
@@ -81,5 +79,11 @@ pub struct FilterClient {
     pub middle_name: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
-    pub tariff: Option<String>,
+    pub tariff: Option<Tariff>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoginClient {
+    pub email: String,
+    pub password: String,
 }

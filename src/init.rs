@@ -1,16 +1,18 @@
 use mds_backend::adapters;
 use mds_backend::config;
 use mds_backend::di;
+use mds_backend::logger;
 use mds_backend::models::employee::CreateEmployee;
+use mds_backend::models::employee::Role;
 
 #[tokio::main]
 async fn main() {
+    logger::init_dev_logger();
+
     let config = config::Config::build().expect("Failed to build config");
     let postgres = adapters::pg_connect(&config.db_url, 2).expect("Failed to connect postgres");
 
-    let default_val = di::default_value_container::DefaultValueContainer::new(postgres.clone());
-    let employee =
-        di::employee_container::EmployeeContainer::new(postgres.clone(), default_val.repo.clone());
+    let employee = di::employee_container::EmployeeContainer::new(postgres.clone());
 
     let email = "furiblack904@gmail.com".to_owned();
     let password = "LetsStartToUseMDS".to_owned();
@@ -21,7 +23,7 @@ async fn main() {
         middle_name: Some("Алексеевич".to_owned()),
         email: email.clone(),
         password: password.clone(),
-        role: Some("Superuser".to_owned()),
+        role: Some(Role::Superuser),
     };
     employee
         .logic

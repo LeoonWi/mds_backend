@@ -1,17 +1,22 @@
 use std::sync::Arc;
 
+use axum::Extension;
 use axum::Json;
 use axum::Router;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::middleware;
 use axum::routing::delete;
 use axum::routing::patch;
 use axum::routing::{get, post};
 
 use crate::di::request_container::RequestContainer;
+use crate::httpserver::guard::guard;
+use crate::models::employee::Role;
 use crate::models::error::AppError;
 use crate::models::request::{CreateRequest, FilterRequest, Priority, Request, Status};
+use crate::models::request_storage::RequestStorage;
 
 pub fn request_router(container: Arc<RequestContainer>) -> Router {
     Router::new()
@@ -27,8 +32,11 @@ pub fn request_router(container: Arc<RequestContainer>) -> Router {
             patch(set_employee),
         )
         .route("/requests/{id}", delete(delete_request))
+        .layer(middleware::from_fn(guard))
         .with_state(container)
 }
+
+// PROTECTED
 
 async fn create_request(
     State(container): State<Arc<RequestContainer>>,
@@ -52,7 +60,12 @@ async fn get_requests(
 async fn set_status(
     State(container): State<Arc<RequestContainer>>,
     Path((id, status)): Path<(i64, Status)>,
+    Extension(request_storage): Extension<RequestStorage>,
 ) -> Result<StatusCode, AppError> {
+    if request_storage.role < Role::Employee {
+        return Err(AppError::Forbidden);
+    }
+
     container
         .request
         .set_status(id, status)
@@ -74,7 +87,11 @@ async fn set_priority(
 async fn set_employee(
     State(container): State<Arc<RequestContainer>>,
     Path((id, employee_id)): Path<(i64, i64)>,
+    Extension(request_storage): Extension<RequestStorage>,
 ) -> Result<StatusCode, AppError> {
+    if request_storage.role < Role::Manager {
+        return Err(AppError::Forbidden);
+    }
     container
         .request
         .change_employee(id, employee_id)

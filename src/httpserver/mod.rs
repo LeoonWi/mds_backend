@@ -1,33 +1,28 @@
 mod client_handler;
 mod employee_handler;
+mod guard;
 mod request_handler;
-mod role_handler;
 mod service_handler;
-mod tariff_handler;
 
 use std::sync::Arc;
 
 use axum::extract::{MatchedPath, Request};
-use axum::http::StatusCode;
+use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 use crate::di::client_container::ClientContainer;
-use crate::di::default_value_container::DefaultValueContainer;
 use crate::di::employee_container::EmployeeContainer;
 use crate::di::request_container::RequestContainer;
-use crate::di::role_container::RoleContainer;
 use crate::di::service_container::ServiceContainer;
-use crate::di::tariff_container::TariffContainer;
 use crate::httpserver::client_handler::client_router;
 use crate::httpserver::employee_handler::employee_router;
 use crate::httpserver::request_handler::request_router;
-use crate::httpserver::role_handler::role_router;
 use crate::httpserver::service_handler::service_router;
-use crate::httpserver::tariff_handler::tariff_router;
 use crate::logger;
 use crate::models::error::AppError;
 
@@ -55,6 +50,7 @@ impl IntoResponse for AppError {
             Self::InternalServerError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, ErrorResponse::new(None))
             }
+            Self::Forbidden => (StatusCode::FORBIDDEN, ErrorResponse::new(None)),
         };
 
         (status, Json(error)).into_response()
@@ -64,9 +60,6 @@ impl IntoResponse for AppError {
 pub struct Server {
     ip: String,
     port: i16,
-    tariff: Arc<TariffContainer>,
-    role: Arc<RoleContainer>,
-    default_value: Arc<DefaultValueContainer>,
     service: Arc<ServiceContainer>,
     employee: Arc<EmployeeContainer>,
     client: Arc<ClientContainer>,
@@ -77,9 +70,6 @@ impl Server {
     pub fn new(
         ip: String,
         port: i16,
-        tariff: Arc<TariffContainer>,
-        role: Arc<RoleContainer>,
-        default_value: Arc<DefaultValueContainer>,
         service: Arc<ServiceContainer>,
         employee: Arc<EmployeeContainer>,
         client: Arc<ClientContainer>,
@@ -88,9 +78,6 @@ impl Server {
         Server {
             ip,
             port,
-            tariff,
-            role,
-            default_value,
             service,
             employee,
             client,
@@ -103,8 +90,6 @@ impl Server {
         logger::init_dev_logger();
 
         // init routers application
-        let tariff_router = tariff_router(self.tariff);
-        let role_router = role_router(self.role);
         let service_router = service_router(self.service);
         let employee_router = employee_router(self.employee);
         let client_router = client_router(self.client);
@@ -112,8 +97,6 @@ impl Server {
 
         // init root router
         let app = Router::new()
-            .merge(tariff_router)
-            .merge(role_router)
             .merge(service_router)
             .merge(employee_router)
             .merge(client_router)
@@ -131,6 +114,13 @@ impl Server {
                         tracing::debug_span!("request ", %method, %uri, matched_path)
                     })
                     .on_failure(()),
+            )
+            .layer(
+                CorsLayer::new()
+                    .allow_origin(Any)
+                    .allow_methods([Method::POST, Method::GET, Method::PATCH, Method::DELETE])
+                    .allow_headers(Any)
+                    .allow_credentials(false),
             );
 
         // init server

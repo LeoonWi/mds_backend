@@ -2,8 +2,6 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use crate::application::client::ClientAdapter;
-use crate::application::employee::EmployeeAdapter;
 use crate::models::error::AppError;
 use crate::models::request::{
     CreateRequest, FilterRequest, Priority, Request, RequestFlat, Status,
