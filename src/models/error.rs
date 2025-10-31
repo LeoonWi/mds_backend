@@ -8,4 +8,5 @@ pub enum AppError {
     BadRequest(String),
     NotFound,
     InternalServerError,
+    Forbidden,
 }

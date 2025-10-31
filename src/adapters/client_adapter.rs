@@ -4,7 +4,7 @@ use sqlx::{PgPool, QueryBuilder, query, query_as};
 use tracing::error;
 
 use crate::application::client::ClientAdapter;
-use crate::models::client::{ClientFlat, FilterClient};
+use crate::models::client::{ClientFlat, FilterClient, Tariff};
 use crate::models::error::AppError;
 
 pub struct ClientRepository {
@@ -26,7 +26,7 @@ impl ClientAdapter for ClientRepository {
         email: String,
         phone: String,
         password: String,
-        tariff: String,
+        tariff: Tariff,
         inn: Option<String>,
         snils: Option<String>,
     ) -> Result<(), AppError> {
@@ -63,15 +63,12 @@ impl ClientAdapter for ClientRepository {
                 c.email,
                 c.phone,
                 c.password,
+                c.tariff,
                 c.inn,
                 c.snils,
                 c.created_at,
-                c.updated_at,
-                t.name AS tariff_name,
-                t.created_at AS tariff_created_at,
-                t.updated_at AS tariff_updated_at
+                c.updated_at
             FROM \"user\" AS c
-            INNER JOIN tariff AS t ON t.name = c.tariff
             WHERE 1=1",
         );
 
@@ -113,27 +110,23 @@ impl ClientAdapter for ClientRepository {
             })
     }
 
-    #[allow(dead_code)]
     async fn get_by_email(&self, email: String) -> Result<ClientFlat, AppError> {
         query_as::<_, ClientFlat>(
             "SELECT
-                c.id,
-                c.name,
-                c.last_name,
-                c.middle_name,
-                c.email,
-                c.phone,
-                c.password,
-                c.inn,
-                c.snils,
-                c.created_at,
-                c.updated_at,
-                t.name AS tariff_name,
-                t.created_at AS tariff_created_at,
-                t.updated_at AS tariff_updated_at
-            FROM \"user\" AS c
-            INNER JOIN tariff AS t ON t.name = c.tariff
-            WHERE c.email = $1",
+                id,
+                name,
+                last_name,
+                middle_name,
+                email,
+                phone,
+                password,
+                tariff,
+                inn,
+                snils,
+                created_at,
+                updated_at
+            FROM \"user\"
+            WHERE email = $1",
         )
         .bind(email)
         .fetch_one(&*self.pool)

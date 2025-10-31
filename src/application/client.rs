@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use bcrypt::DEFAULT_COST;
+use bcrypt::{DEFAULT_COST, verify};
 use phonenumber::country::Id::RU;
 
-use crate::application::default_value::DefaultValueAdapter;
-use crate::models::client::{Client, ClientFlat, CreateClient, FilterClient};
+use crate::models::client::{Client, ClientFlat, CreateClient, FilterClient, LoginClient, Tariff};
 use crate::models::error::AppError;
 use crate::phoneparse::phoneparse;
 use crate::validate_email::validate_email;
@@ -22,7 +21,7 @@ pub trait ClientAdapter {
         email: String,
         phone: String,
         password: String,
-        tariff: String,
+        tariff: Tariff,
         inn: Option<String>,
         snils: Option<String>,
     ) -> impl Future<Output = Result<(), AppError>>;
@@ -34,25 +33,16 @@ pub trait ClientAdapter {
     fn delete(&self, email: String) -> impl Future<Output = Result<(), AppError>>;
 }
 
-pub struct ClientLogic<R, D>
-where
-    R: ClientAdapter,
-    D: DefaultValueAdapter,
-{
+pub struct ClientLogic<R: ClientAdapter> {
     repo: Arc<R>,
-    repo_default_value: Arc<D>,
 }
 
-impl<R, D> ClientLogic<R, D>
+impl<R> ClientLogic<R>
 where
     R: ClientAdapter,
-    D: DefaultValueAdapter,
 {
-    pub fn new(repo: Arc<R>, repo_default_value: Arc<D>) -> Self {
-        ClientLogic {
-            repo,
-            repo_default_value,
-        }
+    pub fn new(repo: Arc<R>) -> Self {
+        ClientLogic { repo }
     }
 
     pub async fn create_client(&self, payload: CreateClient) -> Result<(), AppError> {
@@ -92,7 +82,7 @@ where
         // Валидация номера + унификация
         let phone = phoneparse(Some(RU), payload.phone)?;
 
-        let tariff = self.repo_default_value.get_tariff().await?.name;
+        let tariff = Tariff::Free;
 
         self.repo
             .save(
@@ -109,6 +99,16 @@ where
             .await
     }
 
+    pub async fn login(&self, payload: LoginClient) -> Result<i64, AppError> {
+        let user = self.repo.get_by_email(payload.email).await?;
+
+        if !verify(payload.password, &user.password).unwrap() {
+            return Err(AppError::BadRequest("Wrong user password".to_owned()));
+        }
+
+        Ok(user.id)
+    }
+
     pub async fn get_clients(&self, filter: FilterClient) -> Vec<Client> {
         match self.repo.get(filter).await {
             Ok(vec) => vec.into_iter().map(Client::from).collect(),
@@ -116,7 +116,6 @@ where
         }
     }
 
-    #[allow(dead_code)]
     pub async fn get_client(&self, email: String) -> Result<Client, AppError> {
         self.repo.get_by_email(email).await.map(Client::from)
     }

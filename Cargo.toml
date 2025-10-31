@@ -13,9 +13,10 @@ path = "src/init.rs"
 
 [dependencies]
 axum = "0.8.6"
+axum-extra = { version = "0.10.3", features = ["typed-header"] }
 tokio = { version = "1.47.1", features = ["full"] }
 tower = "0.5.2"
-tower-http = { version = "0.6.6", features = ["trace"] }
+tower-http = { version = "0.6.6", features = ["cors", "trace"] }
 serde = { version = "1.0.228", features = ["derive"] }
 chrono = { version = "0.4.42", features = ["serde"] }
 sqlx = { version = "0.8.6", features = [
@@ -32,4 +33,4 @@ serde_json = "1.0"
 bcrypt = "0.17"
 regex = "1.12.2"
 phonenumber = "0.3.7"
-jsonwebtoken = { version = "10.1" }
+jsonwebtoken = { version = "10.1", features = ["rust_crypto"] }

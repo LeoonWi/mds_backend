@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use sqlx::PgPool;
 
-use crate::{adapters::service_adapter::ServiceRepository, application::service::ServiceLogic};
+use crate::adapters::service_adapter::ServiceRepository;
+use crate::application::service::ServiceLogic;
 
 pub struct ServiceContainer {
     pub repo: Arc<ServiceRepository>,
